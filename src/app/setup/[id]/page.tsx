@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GlassmorphicCard } from '@/components/GlassmorphicCard';
-import { Copy, Share2, Download, ExternalLink } from 'lucide-react';
-import { generateOGPSVG } from '@/lib/ogp-generator';
+import { ShareButtons } from '@/components/ShareButtons';
+import { ExternalLink } from 'lucide-react';
 
 interface Setup {
   id: string;
@@ -31,8 +31,6 @@ interface PageProps {
 export default function SetupDetailPage({ params }: PageProps) {
   const [setup, setSetup] = useState<Setup | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [ogpImage, setOgpImage] = useState<string>('');
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // Mock: In production, fetch from /api/setups/:id
@@ -50,50 +48,12 @@ export default function SetupDetailPage({ params }: PageProps) {
       ],
       username: 'productivityninja',
       createdAt: new Date().toISOString(),
-      shareUrl: `${window.location.origin}/setup/${params.id}`,
+      shareUrl: typeof window !== 'undefined' ? `${window.location.origin}/setup/${params.id}` : '',
     };
 
     setSetup(mockSetup);
-
-    // Generate OGP image
-    const svg = generateOGPSVG({
-      title: mockSetup.title,
-      description: mockSetup.description,
-      budget: mockSetup.totalBudget,
-      items: mockSetup.items,
-      username: mockSetup.username,
-    });
-
-    setOgpImage(svg);
     setIsLoading(false);
   }, [params.id]);
-
-  const handleCopyLink = () => {
-    if (setup?.shareUrl) {
-      navigator.clipboard.writeText(setup.shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleShareOnX = () => {
-    if (setup?.shareUrl) {
-      const text = `Check out my desk setup on Canvas: ${setup.title} - Total budget: ¥${setup.totalBudget.toLocaleString('ja-JP')}`;
-      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(setup.shareUrl)}`;
-      window.open(url, '_blank');
-    }
-  };
-
-  const handleDownloadImage = () => {
-    if (ogpImage) {
-      const link = document.createElement('a');
-      link.href = ogpImage;
-      link.download = `${setup?.title || 'setup'}-preview.svg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -113,7 +73,7 @@ export default function SetupDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -123,43 +83,19 @@ export default function SetupDetailPage({ params }: PageProps) {
           <h1 className="text-4xl md:text-5xl font-light tracking-tight mb-2 text-gray-900">
             {setup.title}
           </h1>
-          <p className="text-gray-600">by {setup.username}</p>
+          <p className="text-gray-600">by @{setup.username}</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* OGP Preview */}
+        <div className="space-y-6">
+          {/* Description & Budget */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-1"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <GlassmorphicCard variant="elevated" padding="md">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-900">Share Preview</h3>
-                {ogpImage && (
-                  <img
-                    src={ogpImage}
-                    alt="Setup preview"
-                    className="w-full rounded-lg border border-gray-200"
-                  />
-                )}
-                <p className="text-xs text-gray-600">
-                  This is how your setup appears on social media
-                </p>
-              </div>
-            </GlassmorphicCard>
-          </motion.div>
-
-          {/* Setup Details */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            {/* Description & Budget */}
             <GlassmorphicCard variant="elevated" padding="lg">
               <div className="space-y-4">
-                <p className="text-gray-700">{setup.description}</p>
+                <p className="text-gray-700 leading-relaxed">{setup.description}</p>
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
                   <div>
@@ -177,20 +113,26 @@ export default function SetupDetailPage({ params }: PageProps) {
                 </div>
               </div>
             </GlassmorphicCard>
+          </motion.div>
 
-            {/* Items List */}
+          {/* Items List */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <GlassmorphicCard variant="elevated" padding="lg">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Recommended Components
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-3 mb-4">
                 {setup.items.map((item, index) => (
                   <motion.div
                     key={item.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
                     className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
                     <div>
@@ -217,50 +159,27 @@ export default function SetupDetailPage({ params }: PageProps) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full mt-4 py-3 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                className="w-full py-3 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
               >
                 Add All to Cart
               </motion.button>
             </GlassmorphicCard>
+          </motion.div>
 
-            {/* Share Actions */}
-            <GlassmorphicCard variant="elevated" padding="lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Share This Setup
-              </h3>
-
-              <div className="space-y-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleCopyLink}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium transition-colors"
-                >
-                  <Copy size={18} />
-                  {copied ? 'Copied!' : 'Copy Link'}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleShareOnX}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-black hover:bg-gray-900 text-white font-medium transition-colors"
-                >
-                  <Share2 size={18} />
-                  Share on X (Twitter)
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDownloadImage}
-                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium transition-colors"
-                >
-                  <Download size={18} />
-                  Download Preview Image
-                </motion.button>
-              </div>
-            </GlassmorphicCard>
+          {/* Share Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <ShareButtons
+              setupId={setup.id}
+              title={setup.title}
+              budget={setup.totalBudget}
+              items={setup.items}
+              username={setup.username}
+              shareUrl={setup.shareUrl || ''}
+            />
           </motion.div>
         </div>
       </div>
