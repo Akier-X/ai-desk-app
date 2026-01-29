@@ -1,0 +1,115 @@
+name: Android Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v1.0.0
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: 34.0.0
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Build release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Build release AAB
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Sign APK (using keystore from secrets)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          # Only sign if secrets are provided
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            # Decode base64 keystore and save
+            echo $KEYSTORE_BASE64 | base64 -d > android/app/release-key.jks
+
+            # Sign APK using jarsigner
+            jarsigner -verbose \
+              -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore android/app/release-key.jks \
+              -storepass $KEYSTORE_PASSWORD \
+              -keypass $KEY_PASSWORD \
+              android/app/build/outputs/apk/release/app-release-unsigned.apk \
+              $KEY_ALIAS
+
+            # Rename to final APK
+            mv android/app/build/outputs/apk/release/app-release-unsigned.apk \
+               android/app/build/outputs/apk/release/app-release.apk
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to Google Play (optional)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.deskcanvas.app
+          releaseFiles: 'android/app/build/outputs/bundle/release/app-release.aab'
+          track: internal # Start with internal testing
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
+
+      - name: Upload AAB as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7

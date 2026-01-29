@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Header } from "@/components/Header";
 import { BottomTabNavigation } from "@/components/BottomTabNavigation";
+import { AppInitializer } from "@/components/AppInitializer";
 import { AuthProvider } from "@/contexts/auth-context";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body className="bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <AuthProvider>
+          <AppInitializer />
           <Header />
           <main className="pt-20 pb-24">
             {children}
