@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
+import { useHaptics } from '@/hooks/useHaptics';
 import { RecommendationForm } from '@/components/RecommendationForm';
 import { Canvas } from '@/components/Canvas';
 import { ProductDrawer } from '@/components/ProductDrawer';
@@ -27,6 +28,7 @@ export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
   const { showToast, toasts } = useToast();
+  const { trigger: haptic } = useHaptics();
 
   const [recommendation, setRecommendation] = useState<RecommendationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,8 +43,10 @@ export default function Home() {
     try {
       const result = await recommendGadgets(input, budget, []);
       setRecommendation(result);
+      await haptic('medium');
     } catch (error) {
       console.error('Recommendation error:', error);
+      await haptic('error');
       alert('Failed to generate recommendations. Please try again.');
     } finally {
       setIsLoading(false);
@@ -90,16 +94,19 @@ export default function Home() {
       const result = await saveSetup(setupData);
 
       if (result.success) {
+        await haptic('success');
         showToast('Setup saved successfully!', 'success');
         // Redirect to the newly created setup
         setTimeout(() => {
           router.push(`/setup/${result.setupId}`);
         }, 500);
       } else {
+        await haptic('error');
         showToast(result.error || 'Failed to save setup', 'error');
       }
     } catch (error) {
       console.error('Error saving setup:', error);
+      await haptic('error');
       showToast('Failed to save setup', 'error');
     } finally {
       setIsSaving(false);
