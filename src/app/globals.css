@@ -2,18 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 3.6%;
+@layer base {
+  html {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.6%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html.dark {
+    --background: 0 0% 3.6%;
+    --foreground: 0 0% 98%;
+  }
+
+  body {
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    overflow-x: hidden;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  html.dark * {
+    @apply border-gray-800;
+  }
 }
 
-html.dark {
-  --background: 0 0% 3.6%;
-  --foreground: 0 0% 98%;
+@layer components {
+  .glassmorphism {
+    @apply backdrop-blur-md border border-white/10 bg-white/5;
+  }
+
+  .glassmorphism-elevated {
+    @apply backdrop-blur-xl border border-white/20 bg-white/20 shadow-xl;
+  }
+
+  .smooth-transition {
+    @apply transition-all duration-300 ease-out;
+  }
 }
 
-body {
-  color: hsl(var(--foreground));
-  background: hsl(var(--background));
-  font-family: Arial, Helvetica, sans-serif;
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Selection styling */
+::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: inherit;
 }

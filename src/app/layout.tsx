@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { Header } from "@/components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Desk Concierge",
-  description: "Your AI-powered desk gadget recommendation platform",
+  title: "Canvas - Design Your Perfect Desk Setup",
+  description: "AI-powered desk gadget recommendations with a canvas-based interface",
 };
 
 export default function RootLayout({
@@ -13,7 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <Header />
+        <main className="pt-20">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
